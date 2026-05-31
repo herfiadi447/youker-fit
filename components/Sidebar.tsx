@@ -10,11 +10,11 @@ const NAV_ITEMS = [
   { href: "/profile", icon: "settings", label: "Settings" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-surface-container-low border-r border-outline-variant h-screen w-64 fixed left-0 top-0 flex flex-col py-6 px-4 gap-base hidden md:flex z-50">
+    <nav className={`bg-surface-container-low border-r border-outline-variant h-screen w-64 fixed left-0 top-0 flex flex-col py-6 px-4 gap-base z-50 transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Header Brand */}
       <div className="mb-8 px-2 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
@@ -80,10 +80,13 @@ export default function Sidebar() {
           </span>
         </button>
         <button
-          onClick={() => {
-            if (confirm("Yakin ingin keluar? Semua log sesi ini akan dihapus (selama belum tersambung ke database).")) {
+          onClick={async () => {
+            if (confirm("Yakin ingin keluar?")) {
+              const { createClient } = await import("@/utils/supabase/client");
+              const supabase = createClient();
+              await supabase.auth.signOut();
               localStorage.clear();
-              window.location.href = "/";
+              window.location.href = "/login";
             }
           }}
           className="text-on-surface-variant hover:bg-surface-container-high hover:text-error rounded-lg flex items-center gap-3 px-3 py-2 transition-all duration-200 cursor-pointer w-full text-left"

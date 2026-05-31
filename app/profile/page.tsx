@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProfile, saveProfile, generateId } from "@/lib/store";
+import { createClient } from "@/utils/supabase/client";
 import {
   calculateBMR,
   calculateTDEE,
@@ -28,6 +28,12 @@ const GOALS: { value: FitnessGoal; label: string }[] = [
 ];
 
 export default function ProfilePage() {
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [profile, setProfile] = useState<Partial<UserProfile>>({
     name: "",
     age: 25,
@@ -39,14 +45,29 @@ export default function ProfilePage() {
     activity_level: "moderately_active",
     goal: "fat_loss_moderate",
   });
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const existing = getProfile();
-    if (existing) {
-      setProfile(existing);
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = "/login";
+        return;
+      }
+      setUserId(user.id);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (data && !error) {
+        setProfile(data as UserProfile);
+      }
+      setLoading(false);
     }
-  }, []);
+    loadProfile();
+  }, [supabase]);
 
   const bmr = calculateBMR(
     profile.gender || "male",
@@ -64,9 +85,11 @@ export default function ProfilePage() {
     profile.goal || "fat_loss_moderate"
   );
 
-  const handleSave = () => {
-    const fullProfile: UserProfile = {
-      id: profile.id || generateId(),
+  const handleSave = async () => {
+    if (!userId) return;
+    setSaving(true);
+    const fullProfile = {
+      id: userId,
       name: profile.name || "User",
       age: profile.age || 25,
       gender: profile.gender || "male",
@@ -82,13 +105,24 @@ export default function ProfilePage() {
       daily_protein_target: dailyProteinTarget,
       updated_at: new Date().toISOString(),
     };
-    saveProfile(fullProfile);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    const { error } = await supabase.from("profiles").upsert(fullProfile);
+
+    setSaving(false);
+    if (!error) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      alert("Error saving profile: " + error.message);
+    }
   };
 
   const inputClass =
     "w-full bg-surface-container-low border border-outline-variant/30 rounded-lg py-3 px-4 text-on-surface font-label-mono focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-shadow shadow-inner";
+
+  if (loading) {
+    return <div className="p-8 text-center text-on-surface-variant font-label-mono animate-pulse">Loading profile data...</div>;
+  }
 
   return (
     <div className="max-w-[800px] mx-auto p-gutter md:p-container-padding flex flex-col gap-section-gap pb-32 md:pb-container-padding">
@@ -97,181 +131,51 @@ export default function ProfilePage() {
           Profile & Target
         </h2>
         <p className="font-body-lg text-body-lg text-on-surface-variant mt-2">
-          Set up your body data and fitness goals to get personalized tracking.
+          Set up your body data and fitness goals.
         </p>
       </header>
 
       <section className="bg-deep-slate rounded-xl p-card-inner shadow-sm border border-outline-variant/20 relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-secondary-container/5 rounded-full blur-3xl pointer-events-none"></div>
-        <h3 className="font-headline-sm text-headline-sm text-on-surface mb-6">
-          Body Data
-        </h3>
+        <h3 className="font-headline-sm text-headline-sm text-on-surface mb-6">Body Data</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              NAME
-            </label>
-            <input
-              className={inputClass}
-              type="text"
-              value={profile.name || ""}
-              onChange={(e) =>
-                setProfile((p) => ({ ...p, name: e.target.value }))
-              }
-              placeholder="Your name"
-            />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">NAME</label>
+            <input className={inputClass} type="text" value={profile.name || ""} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} placeholder="Your name" />
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              AGE
-            </label>
-            <input
-              className={inputClass}
-              type="number"
-              min={10}
-              max={100}
-              value={profile.age || ""}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  age: parseInt(e.target.value) || 0,
-                }))
-              }
-            />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">AGE</label>
+            <input className={inputClass} type="number" min={10} max={100} value={profile.age || ""} onChange={(e) => setProfile((p) => ({ ...p, age: parseInt(e.target.value) || 0 }))} />
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              GENDER
-            </label>
-            <select
-              className={inputClass}
-              value={profile.gender || "male"}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  gender: e.target.value as "male" | "female",
-                }))
-              }
-            >
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">GENDER</label>
+            <select className={inputClass} value={profile.gender || "male"} onChange={(e) => setProfile((p) => ({ ...p, gender: e.target.value as "male" | "female" }))}>
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              HEIGHT (CM)
-            </label>
-            <input
-              className={inputClass}
-              type="number"
-              min={100}
-              max={250}
-              value={profile.height_cm || ""}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  height_cm: parseFloat(e.target.value) || 0,
-                }))
-              }
-            />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">HEIGHT (CM)</label>
+            <input className={inputClass} type="number" min={100} max={250} value={profile.height_cm || ""} onChange={(e) => setProfile((p) => ({ ...p, height_cm: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              START WEIGHT (KG)
-            </label>
-            <input
-              className={inputClass}
-              type="number"
-              min={30}
-              max={300}
-              step={0.1}
-              value={profile.start_weight || ""}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  start_weight: parseFloat(e.target.value) || 0,
-                }))
-              }
-            />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">CURRENT WEIGHT (KG)</label>
+            <input className={inputClass} type="number" min={30} max={300} step={0.1} value={profile.current_weight || ""} onChange={(e) => setProfile((p) => ({ ...p, current_weight: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              CURRENT WEIGHT (KG)
-            </label>
-            <input
-              className={inputClass}
-              type="number"
-              min={30}
-              max={300}
-              step={0.1}
-              value={profile.current_weight || ""}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  current_weight: parseFloat(e.target.value) || 0,
-                }))
-              }
-            />
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">TARGET WEIGHT (KG)</label>
+            <input className={inputClass} type="number" min={30} max={300} step={0.1} value={profile.target_weight || ""} onChange={(e) => setProfile((p) => ({ ...p, target_weight: parseFloat(e.target.value) || 0 }))} />
           </div>
           <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              TARGET WEIGHT (KG)
-            </label>
-            <input
-              className={inputClass}
-              type="number"
-              min={30}
-              max={300}
-              step={0.1}
-              value={profile.target_weight || ""}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  target_weight: parseFloat(e.target.value) || 0,
-                }))
-              }
-            />
-          </div>
-          <div>
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              ACTIVITY LEVEL
-            </label>
-            <select
-              className={inputClass}
-              value={profile.activity_level || "moderately_active"}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  activity_level: e.target.value as ActivityLevel,
-                }))
-              }
-            >
-              {ACTIVITY_LEVELS.map((al) => (
-                <option key={al.value} value={al.value}>
-                  {al.label}
-                </option>
-              ))}
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">ACTIVITY LEVEL</label>
+            <select className={inputClass} value={profile.activity_level || "moderately_active"} onChange={(e) => setProfile((p) => ({ ...p, activity_level: e.target.value as ActivityLevel }))}>
+              {ACTIVITY_LEVELS.map((al) => (<option key={al.value} value={al.value}>{al.label}</option>))}
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">
-              FITNESS GOAL
-            </label>
-            <select
-              className={inputClass}
-              value={profile.goal || "fat_loss_moderate"}
-              onChange={(e) =>
-                setProfile((p) => ({
-                  ...p,
-                  goal: e.target.value as FitnessGoal,
-                }))
-              }
-            >
-              {GOALS.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
+            <label className="block font-label-mono text-label-mono text-on-surface-variant mb-2">FITNESS GOAL</label>
+            <select className={inputClass} value={profile.goal || "fat_loss_moderate"} onChange={(e) => setProfile((p) => ({ ...p, goal: e.target.value as FitnessGoal }))}>
+              {GOALS.map((g) => (<option key={g.value} value={g.value}>{g.label}</option>))}
             </select>
           </div>
         </div>
@@ -280,62 +184,30 @@ export default function ProfilePage() {
       {/* Calculated Stats */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         <div className="bg-surface-container rounded-xl p-card-inner border border-outline-variant/30 text-center">
-          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">
-            BMR
-          </p>
-          <p className="font-headline-md text-headline-md text-on-surface">
-            {bmr}
-          </p>
-          <p className="font-label-mono text-[10px] text-on-surface-variant">
-            kcal/day
-          </p>
+          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">BMR</p>
+          <p className="font-headline-md text-headline-md text-on-surface">{bmr}</p>
         </div>
         <div className="bg-surface-container rounded-xl p-card-inner border border-outline-variant/30 text-center">
-          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">
-            TDEE
-          </p>
-          <p className="font-headline-md text-headline-md text-on-surface">
-            {tdee}
-          </p>
-          <p className="font-label-mono text-[10px] text-on-surface-variant">
-            kcal/day
-          </p>
+          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">TDEE</p>
+          <p className="font-headline-md text-headline-md text-on-surface">{tdee}</p>
         </div>
         <div className="bg-surface-container rounded-xl p-card-inner border border-outline-variant/30 text-center">
-          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">
-            Target Cal
-          </p>
-          <p className="font-headline-md text-headline-md text-secondary">
-            {dailyCalorieTarget}
-          </p>
-          <p className="font-label-mono text-[10px] text-on-surface-variant">
-            kcal/day
-          </p>
+          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">Target Cal</p>
+          <p className="font-headline-md text-headline-md text-secondary">{dailyCalorieTarget}</p>
         </div>
         <div className="bg-surface-container rounded-xl p-card-inner border border-outline-variant/30 text-center">
-          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">
-            Target Protein
-          </p>
-          <p className="font-headline-md text-headline-md text-tertiary">
-            {dailyProteinTarget}
-          </p>
-          <p className="font-label-mono text-[10px] text-on-surface-variant">
-            g/day
-          </p>
+          <p className="font-label-mono text-label-mono text-on-surface-variant uppercase mb-2">Target Protein</p>
+          <p className="font-headline-md text-headline-md text-tertiary">{dailyProteinTarget}</p>
         </div>
       </section>
 
       <button
         onClick={handleSave}
-        className="w-full bg-emerald-muted hover:bg-secondary text-white hover:text-on-secondary font-headline-sm text-[16px] py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+        disabled={saving}
+        className="w-full bg-emerald-muted hover:bg-secondary text-white font-headline-sm py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
       >
-        <span
-          className="material-symbols-outlined text-[20px]"
-          style={{ fontVariationSettings: "'FILL' 1" }}
-        >
-          {saved ? "check" : "save"}
-        </span>
-        {saved ? "Saved!" : "Save Profile"}
+        <span className="material-symbols-outlined icon-fill">{saved ? "check" : "save"}</span>
+        {saving ? "Saving..." : saved ? "Saved!" : "Save Profile to Cloud"}
       </button>
     </div>
   );
