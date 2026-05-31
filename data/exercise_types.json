@@ -1,0 +1,83 @@
+[
+  {
+    "id": "1",
+    "name": "Lari",
+    "aliases": ["running", "jogging", "lari"],
+    "met_value": 8,
+    "calculation_type": "distance_based",
+    "category": "cardio",
+    "icon": "directions_run"
+  },
+  {
+    "id": "2",
+    "name": "Jalan Kaki",
+    "aliases": ["walking", "jalan", "jalan kaki"],
+    "met_value": 3.5,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "directions_walk"
+  },
+  {
+    "id": "3",
+    "name": "Bersepeda",
+    "aliases": ["cycling", "sepeda", "bersepeda"],
+    "met_value": 6,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "directions_bike"
+  },
+  {
+    "id": "4",
+    "name": "Bodyweight Workout",
+    "aliases": ["workout rumah", "calisthenics", "bodyweight"],
+    "met_value": 5,
+    "calculation_type": "met_based",
+    "category": "strength",
+    "icon": "fitness_center"
+  },
+  {
+    "id": "5",
+    "name": "Angkat Beban",
+    "aliases": ["gym", "weight lifting", "angkat beban"],
+    "met_value": 4,
+    "calculation_type": "met_based",
+    "category": "strength",
+    "icon": "fitness_center"
+  },
+  {
+    "id": "6",
+    "name": "Renang",
+    "aliases": ["swimming", "renang"],
+    "met_value": 7,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "pool"
+  },
+  {
+    "id": "7",
+    "name": "Badminton",
+    "aliases": ["badminton", "bulu tangkis"],
+    "met_value": 5.5,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "sports_tennis"
+  },
+  {
+    "id": "8",
+    "name": "Futsal",
+    "aliases": ["futsal", "sepak bola", "football"],
+    "met_value": 7,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "sports_soccer"
+  },
+  {
+    "id": "9",
+    "name": "Skipping",
+    "aliases": ["skipping", "jump rope", "lompat tali"],
+    "met_value": 10,
+    "calculation_type": "met_based",
+    "category": "cardio",
+    "icon": "sports"
+  }
+]
