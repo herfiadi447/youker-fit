@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const supabase = createClient();
 
@@ -16,6 +17,7 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       if (isLogin) {
@@ -31,7 +33,7 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        alert("Registration successful! You can now log in.");
+        setSuccessMsg("Registration successful! Please check your email to verify your account, then sign in.");
         setIsLogin(true);
       }
     } catch (err: any) {
@@ -59,8 +61,16 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-error/10 border border-error/30 text-error rounded-lg font-body-sm text-center">
+          <div className="mb-4 p-4 bg-error/10 border border-error/30 text-error rounded-lg font-body-sm text-center flex items-center gap-2 justify-center">
+            <span className="material-symbols-outlined text-[18px]">error</span>
             {error}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mb-4 p-4 bg-deficit-success/10 border border-deficit-success/30 text-deficit-success rounded-lg font-body-sm text-center flex flex-col items-center gap-2 justify-center">
+            <span className="material-symbols-outlined text-2xl">check_circle</span>
+            {successMsg}
           </div>
         )}
 
