@@ -70,16 +70,24 @@ export default function Sidebar() {
 
       {/* Footer Links */}
       <div className="mt-auto border-t border-outline-variant/50 pt-4 flex flex-col gap-1">
-        <Link
-          href="#"
-          className="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg flex items-center gap-3 px-3 py-2 transition-all duration-200 cursor-pointer"
+        <button
+          onClick={() => alert("Jika butuh bantuan, email ke: support@youkerfit.com")}
+          className="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg flex items-center gap-3 px-3 py-2 transition-all duration-200 cursor-pointer w-full text-left"
         >
           <span className="material-symbols-outlined text-[18px]">help</span>
           <span className="font-label-mono text-label-mono uppercase">
             Help
           </span>
-        </Link>
-        <button className="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg flex items-center gap-3 px-3 py-2 transition-all duration-200 cursor-pointer w-full text-left">
+        </button>
+        <button
+          onClick={() => {
+            if (confirm("Yakin ingin keluar? Semua log sesi ini akan dihapus (selama belum tersambung ke database).")) {
+              localStorage.clear();
+              window.location.href = "/";
+            }
+          }}
+          className="text-on-surface-variant hover:bg-surface-container-high hover:text-error rounded-lg flex items-center gap-3 px-3 py-2 transition-all duration-200 cursor-pointer w-full text-left"
+        >
           <span className="material-symbols-outlined text-[18px]">logout</span>
           <span className="font-label-mono text-label-mono uppercase">
             Logout
