@@ -106,7 +106,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary/90 text-on-primary font-label-mono text-label-mono font-bold uppercase py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6"
+            className={`w-full font-label-mono text-label-mono font-bold uppercase py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6 ${
+              isLogin 
+                ? "bg-primary hover:bg-primary/90 text-on-primary" 
+                : "bg-tertiary hover:bg-tertiary/90 text-on-primary"
+            }`}
           >
             {loading && (
               <span className="material-symbols-outlined animate-spin">
@@ -117,14 +121,26 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center pt-6 border-t border-outline-variant/30">
+          <p className="text-on-surface-variant font-body-sm mb-3">
+            {isLogin ? "New to Youker Fit?" : "Already a member?"}
+          </p>
           <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="font-body-sm text-primary hover:underline"
+            type="button"
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError(null);
+              setSuccessMsg(null);
+            }}
+            className={`font-label-mono uppercase tracking-wider px-6 py-2 rounded-full border-2 transition-all duration-300 ${
+              isLogin
+                ? "border-tertiary text-tertiary hover:bg-tertiary/10"
+                : "border-primary text-primary hover:bg-primary/10"
+            }`}
           >
             {isLogin
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Sign In"}
+              ? "Create an Account"
+              : "Sign In Here"}
           </button>
         </div>
       </div>
